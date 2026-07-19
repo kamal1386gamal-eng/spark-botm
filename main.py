@@ -10,7 +10,7 @@ ADMIN_ID = int(os.environ["ADMIN_ID"])
 TARGET_CHANNEL = os.environ["TARGET_CHANNEL"]
 LINK_TEXT = "🆔 @spark_news_tel"
 
-SOURCE_CHANNELS = ["@BadCandom", "@AloNews_com", "@ChizNewz", "@drtel"]
+SOURCE_CHANNELS = ["@BadCandom", "@AloNews_com", "@ChizNewz", "@drtel", "@spark_music_tel"]
 
 bot = Client("bot_session", bot_token=BOT_TOKEN, api_id=API_ID, api_hash=API_HASH)
 userbot = Client("userbot_session", api_id=API_ID, api_hash=API_HASH, session_string=SESSION_STRING)
