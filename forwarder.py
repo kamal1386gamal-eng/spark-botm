@@ -8,13 +8,15 @@ API_HASH = os.environ["API_HASH"]
 SESSION_STRING = os.environ["SESSION_STRING"]
 BOT_USERNAME = os.environ["BOT_USERNAME"]
 
-# کانال‌های مبدأ
+# کانال‌های مبدأ (جدید)
 SOURCE_CHANNELS = [
-    "@drtel",
-    "@ChizNewz",
+    "@IrJaavan",
     "@khabarfuri",
-    "@FieldReports",
-    "@spark_music_tel",   # ← کانال جدید
+    "@ChizNewz",
+    "@ChizBergerz",
+    "@drtel",
+    "@FarsKhabari",
+    "@spark_music_tel",
 ]
 
 client = TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH)
