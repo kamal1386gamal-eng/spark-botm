@@ -8,7 +8,15 @@ API_ID = int(os.environ["API_ID"])
 API_HASH = os.environ["API_HASH"]
 SESSION_STRING = os.environ["SESSION_STRING"]
 BOT_USERNAME = os.environ["BOT_USERNAME"]
-SOURCE_CHANNELS = os.environ["SOURCE_CHANNELS"].split(",")
+
+# ========== کانال‌های مبدأ (ثابت) ==========
+SOURCE_CHANNELS = [
+    "@drtel",
+    "@ChizNewz",
+    "@khabarfuri",
+    "@FieldReports",
+]
+# =========================================
 
 client = TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH)
 
@@ -19,7 +27,9 @@ async def forward_to_bot(event):
 
 async def main():
     await client.start()
-    print("🔥 یوزربات آماده است...")
+    print("🔥 یوزربات آماده است و این کانال‌ها را زیر نظر دارد:")
+    for ch in SOURCE_CHANNELS:
+        print(f"   ➜ {ch}")
     await client.run_until_disconnected()
 
 if __name__ == "__main__":
