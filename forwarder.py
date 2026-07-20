@@ -20,14 +20,14 @@ SOURCE_CHANNELS = [
 
 client = TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH)
 
-# صف برای پست‌های تکی (غیر آلبوم)
+# صف برای فروارد پست‌های تکی (غیر آلبوم)
 forward_queue = asyncio.Queue()
 
-# جمع‌آوری آلبوم‌ها (کلید = media_group_id)
+# جمع‌آوری آلبوم‌ها (کلید = grouped_id)
 pending_albums = {}
 
 async def forward_single_worker():
-    """کارگر صف برای فروارد پست‌های تکی با فاصله"""
+    """فروارد پست‌های تکی با فاصلهٔ نیم ثانیه"""
     while True:
         event = await forward_queue.get()
         try:
@@ -35,41 +35,38 @@ async def forward_single_worker():
             print(f"📤 فروارد تکی از {event.chat.title}")
             await asyncio.sleep(0.5)
         except Exception as e:
-            print(f"⚠️ خطا در فروارد: {e}")
+            print(f"⚠️ خطا در فروارد تکی: {e}")
         finally:
             forward_queue.task_done()
 
 @client.on(events.NewMessage(chats=SOURCE_CHANNELS))
 async def new_message_handler(event):
-    if event.message.media_group_id:
-        # بخشی از یک آلبوم است → جمع‌آوری شود
-        group_id = event.message.media_group_id
-        if group_id not in pending_albums:
-            pending_albums[group_id] = {"messages": [], "timer": None}
-        pending_albums[group_id]["messages"].append(event)
+    # بررسی آلبوم با استفاده از grouped_id
+    grouped_id = event.message.grouped_id
+    if grouped_id:
+        # بخشی از یک آلبوم است
+        if grouped_id not in pending_albums:
+            pending_albums[grouped_id] = {"messages": [], "timer": None}
+        pending_albums[grouped_id]["messages"].append(event)
 
-        # اگر تایمر قبلاً تنظیم نشده، یک تایمر ۱.۵ ثانیه تنظیم کن
-        if not pending_albums[group_id]["timer"]:
-            async def process_album_later(gid=group_id):
-                await asyncio.sleep(1.5)  # کمی بیشتر از ربات برای اطمینان
+        if not pending_albums[grouped_id]["timer"]:
+            async def process_album_later(gid=grouped_id):
+                await asyncio.sleep(1.5)  # کمی صبر برای دریافت همهٔ آیتم‌ها
                 album = pending_albums.pop(gid, None)
                 if not album:
                     return
-                messages = album["messages"]
-                # مرتب‌سازی بر اساس message_id
-                messages.sort(key=lambda m: m.message.message_id)
-                # فروارد همه به صورت پشت سر هم (بدون sleep)
-                for e in messages:
+                msgs = album["messages"]
+                msgs.sort(key=lambda m: m.message.id)
+                for e in msgs:
                     try:
                         await client.forward_messages(BOT_USERNAME, e.message)
-                        # بدون sleep عمدی؛ خود تلگرام آن‌ها را به‌عنوان یک گروه تحویل می‌دهد
-                        await asyncio.sleep(0.05)  # یک تأخیر بسیار کوچک برای جلوگیری از رد شدن
+                        await asyncio.sleep(0.05)  # فاصلهٔ بسیار کم برای جلوگیری از خطای Rate Limit
                     except Exception as err:
                         print(f"⚠️ خطا در فروارد آلبوم: {err}")
-                print(f"📸 آلبوم با {len(messages)} آیتم فروارد شد")
-            pending_albums[group_id]["timer"] = asyncio.create_task(process_album_later())
+                print(f"📸 آلبوم با {len(msgs)} آیتم فروارد شد")
+            pending_albums[grouped_id]["timer"] = asyncio.create_task(process_album_later())
     else:
-        # پست تکی (غیر آلبوم) ← به صف اضافه شود
+        # پست تکی → صف
         await forward_queue.put(event)
 
 async def main():
