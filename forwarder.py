@@ -20,7 +20,7 @@ SOURCE_CHANNELS = [
 
 client = TelegramClient(StringSession(SESSION_STRING), API_ID, API_HASH)
 
-# صف برای فروارد پست‌های تکی (غیر آلبوم)
+# صف برای پست‌های تکی
 forward_queue = asyncio.Queue()
 
 # جمع‌آوری آلبوم‌ها (کلید = grouped_id)
@@ -41,10 +41,9 @@ async def forward_single_worker():
 
 @client.on(events.NewMessage(chats=SOURCE_CHANNELS))
 async def new_message_handler(event):
-    # بررسی آلبوم با استفاده از grouped_id
     grouped_id = event.message.grouped_id
     if grouped_id:
-        # بخشی از یک آلبوم است
+        # پیام متعلق به یک آلبوم است
         if grouped_id not in pending_albums:
             pending_albums[grouped_id] = {"messages": [], "timer": None}
         pending_albums[grouped_id]["messages"].append(event)
@@ -57,16 +56,20 @@ async def new_message_handler(event):
                     return
                 msgs = album["messages"]
                 msgs.sort(key=lambda m: m.message.id)
-                for e in msgs:
-                    try:
-                        await client.forward_messages(BOT_USERNAME, e.message)
-                        await asyncio.sleep(0.05)  # فاصلهٔ بسیار کم برای جلوگیری از خطای Rate Limit
-                    except Exception as err:
-                        print(f"⚠️ خطا در فروارد آلبوم: {err}")
-                print(f"📸 آلبوم با {len(msgs)} آیتم فروارد شد")
+                # استخراج شناسهٔ عددی پیام‌ها
+                msg_ids = [m.message.id for m in msgs]
+                # از اولین پیام، شناسهٔ چت مبدأ را می‌گیریم
+                from_peer = msgs[0].chat_id
+                try:
+                    # فروارد کل آلبوم در یک درخواست (حفظ گروه‌بندی)
+                    await client.forward_messages(BOT_USERNAME, msg_ids, from_peer=from_peer)
+                    print(f"📸 آلبوم با {len(msgs)} آیتم فروارد شد")
+                except Exception as e:
+                    print(f"⚠️ خطا در فروارد آلبوم: {e}")
+
             pending_albums[grouped_id]["timer"] = asyncio.create_task(process_album_later())
     else:
-        # پست تکی → صف
+        # پست تکی → به صف اضافه شود
         await forward_queue.put(event)
 
 async def main():
